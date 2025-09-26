@@ -2,7 +2,8 @@
 
 if not exist build mkdir build
 
-set common=-show-timings -debug -o:minimal -vet-unused -vet-using-stmt -vet-using-param -vet-style -vet-semicolon
+rem remember to add -vet-unusued on release 
+set common=-show-timings -debug -o:minimal -vet-using-stmt -vet-using-param -vet-style -vet-semicolon
 
 pushd build
 

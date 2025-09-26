@@ -141,16 +141,35 @@ create_window :: proc(width, height : i32, window_name : string) -> win.HWND {
 
 pump_msg :: proc(old_input, new_input : ^g.Input) {
 
+    new_input.cinput[.Keyboard] = {}
+
     new_keyboard := &new_input.cinput[.Keyboard]
     old_keyboard := &old_input.cinput[.Keyboard]
 
-    for ind in g.Buttons {
-        new_keyboard.buttons[ind].ended_down = old_keyboard.buttons[ind].ended_down
+    for oldi, ind in old_keyboard.buttons {
+        new_keyboard.buttons[ind].ended_down = oldi.ended_down
     }
 
     msg : win.MSG
     for win.PeekMessageW(&msg, nil, 0, 0, win.PM_REMOVE) {
         switch(msg.message) {
+            case win.WM_MOUSEMOVE : {
+                new_input.mouse = { f32(win.GET_X_LPARAM(msg.lParam)), f32(win.GET_Y_LPARAM(msg.lParam)) }
+            }
+
+            case win.WM_LBUTTONDOWN: {
+                g.process_keyboard_message(&new_keyboard.buttons[.MOUSE_LEFT], true)
+            }
+            case win.WM_LBUTTONUP: {
+                g.process_keyboard_message(&new_keyboard.buttons[.MOUSE_LEFT], false)
+            }
+            case win.WM_RBUTTONDOWN: {
+                g.process_keyboard_message(&new_keyboard.buttons[.MOUSE_RIGHT], true)
+            }
+            case win.WM_RBUTTONUP: {
+                g.process_keyboard_message(&new_keyboard.buttons[.MOUSE_RIGHT], false)
+            }
+
             case win.WM_KEYUP : fallthrough
             case win.WM_KEYDOWN : fallthrough
             case win.WM_SYSKEYDOWN : fallthrough
@@ -201,13 +220,19 @@ pump_msg :: proc(old_input, new_input : ^g.Input) {
                             g.process_keyboard_message(&new_keyboard.buttons[.Start],
                                                        is_down)
                         }
+                        case 'N' : {
+                            g.process_keyboard_message(&new_keyboard.buttons[.DEBUG_EDITOR],
+                                                       is_down)
+                        }
                     }
                 }
 
             }
+            case : {
+                win.TranslateMessage(&msg)
+                win.DispatchMessageW(&msg)
+            }
         }
-        win.TranslateMessage(&msg)
-        win.DispatchMessageW(&msg)
     }
 }
 
@@ -672,7 +697,7 @@ main :: proc() {
 
         free_all(context.temp_allocator)
     }
-
+    g.shutdown(&mem)
 }
 
 
